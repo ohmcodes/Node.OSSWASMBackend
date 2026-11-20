@@ -81,6 +81,29 @@ describe("guest auth", () => {
     expect(me.json().displayName).toBe("Alice2");
   });
 
+  it("gives new guests a random friendly name and keeps it on later logins", async () => {
+    const first = await guest("device-random-name-0001");
+    expect(first.player.displayName).toMatch(/^[A-Z][a-z]+[A-Z][a-z]+\d{4}$/);
+    const again = await guest("device-random-name-0001");
+    expect(again.player.displayName).toBe(first.player.displayName);
+    const other = await guest("device-random-name-0002");
+    expect(other.player.id).not.toBe(first.player.id);
+  });
+
+  it("sanitizes display names", async () => {
+    const p = await guest("device-sanitize-000001", "  <b>Bob</b>\u0007  the  Builder  ");
+    expect(p.player.displayName).toBe("bBob/b the Builder");
+    const long = await guest("device-sanitize-000002", "Abcdefghij Klmnopqrst Uvwxyz12");
+    expect(long.player.displayName).toBe("Abcdefghij Klmnopqrst Uv");
+    const bad = await app.inject({
+      method: "PATCH",
+      url: "/v1/me",
+      headers: { authorization: `Bearer ${p.token}` },
+      payload: { displayName: "<<>>" },
+    });
+    expect(bad.statusCode).toBe(400);
+  });
+
   it("rejects requests without a token", async () => {
     const res = await app.inject({ method: "GET", url: "/v1/me" });
     expect(res.statusCode).toBe(401);
