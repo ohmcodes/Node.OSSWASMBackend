@@ -1,0 +1,23 @@
+# Works with `docker compose up -d`, as a Portainer stack (Web editor), or as a TrueNAS SCALE custom app (YAML).
+# Set the values in .env or in the Portainer/TrueNAS environment variables UI. See .env.example.
+# To build the image yourself instead of pulling it: docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+services:
+  osswasm-backend:
+    image: ${OSSWASM_IMAGE:-ghcr.io/ohmcodes/osswasm-backend:latest}
+    container_name: osswasm-backend
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT:-3000}:3000"
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      SERVER_KEYS: ${SERVER_KEYS:?set SERVER_KEYS}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+      TRUST_PROXY: ${TRUST_PROXY:-true}
+      CLIENT_SCORE_SUBMIT: ${CLIENT_SCORE_SUBMIT:-true}
+      SERVER_TTL_SECONDS: ${SERVER_TTL_SECONDS:-30}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - osswasm-data:/data
+
+volumes:
+  osswasm-data:

@@ -1,0 +1,30 @@
+{
+  "name": "osswasm-backend",
+  "version": "0.1.0",
+  "description": "Self-hostable backend for the UE5 OnlineSubsystemWASM plugin: server list, guest auth, leaderboards, cloud saves.",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.4.3",
+    "@fastify/jwt": "^10.2.8",
+    "@fastify/rate-limit": "^11.2.2",
+    "fastify": "^5.12.8"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.1"
+  }
+}

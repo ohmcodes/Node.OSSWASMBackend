@@ -1,0 +1,5 @@
+# Override: build the image from this repo instead of pulling it.
+services:
+  osswasm-backend:
+    build: .
+    image: osswasm-backend:local
