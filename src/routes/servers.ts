@@ -53,7 +53,13 @@ const serverFields = {
   map: { type: "string", maxLength: 128 },
   mode: { type: "string", maxLength: 64 },
   version: { type: "string", minLength: 1, maxLength: 32 },
-  connectUrl: { type: "string", pattern: "^wss?://", maxLength: 256 },
+  // Where players connect. For UE dedicated servers this is the UDP "host:port" (web clients reach it through the
+  // WebSocket relay). A ws:// or wss:// URL is accepted too.
+  connectUrl: {
+    type: "string",
+    pattern: "^(wss?://[A-Za-z0-9.\\-\\[\\]:_]+(/\\S*)?|(\\[[0-9A-Fa-f:]+\\]|[A-Za-z0-9.\\-_]+):[0-9]{1,5})$",
+    maxLength: 256,
+  },
   maxPlayers: { type: "integer", minimum: 1, maximum: 1000 },
   players: { type: "integer", minimum: 0, maximum: 1000 },
   state: { type: "string", enum: STATES },

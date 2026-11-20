@@ -55,7 +55,7 @@ Auth headers: players send `Authorization: Bearer <token>`; dedicated servers se
 ### Server list
 | Method | Path | Auth | Body → Response |
 |---|---|---|---|
-| POST | `/v1/servers/register` | `x-server-key` | `{name, version, connectUrl (ws:// or wss://), maxPlayers, region?, map?, mode?, players?, state?, metadata?}` → `{serverId, serverToken, heartbeatIntervalSeconds, ttlSeconds}` |
+| POST | `/v1/servers/register` | `x-server-key` | `{name, version, connectUrl (UDP host:port such as 203.0.113.5:7777, or a ws:// / wss:// URL), maxPlayers, region?, map?, mode?, players?, state?, metadata?}` → `{serverId, serverToken, heartbeatIntervalSeconds, ttlSeconds}` |
 | POST | `/v1/servers/:id/heartbeat` | `x-server-token` | `{players?, state?, map?, mode?, name?, region?, maxPlayers?, metadata?}` → `{ok}` |
 | DELETE | `/v1/servers/:id` | `x-server-token` | → 204 |
 | POST | `/v1/servers/:id/verify-ticket` | `x-server-token` | `{ticket}` → `{valid, playerId, displayName}` or `{valid:false, reason}` |

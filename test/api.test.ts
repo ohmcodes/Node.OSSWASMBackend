@@ -98,14 +98,20 @@ describe("server registry", () => {
     expect(res.statusCode).toBe(401);
   });
 
-  it("rejects non-websocket connect URLs", async () => {
-    const res = await app.inject({
-      method: "POST",
-      url: "/v1/servers/register",
-      headers: { "x-server-key": SERVER_KEY },
-      payload: { name: "x", version: "1.0", connectUrl: "http://localhost:7777", maxPlayers: 4 },
-    });
-    expect(res.statusCode).toBe(400);
+  it("accepts host:port and ws(s) URLs, rejects other connect URLs", async () => {
+    const register = (connectUrl: string) =>
+      app.inject({
+        method: "POST",
+        url: "/v1/servers/register",
+        headers: { "x-server-key": SERVER_KEY },
+        payload: { name: "x", version: "1.0", connectUrl, maxPlayers: 4 },
+      });
+    expect((await register("127.0.0.1:7777")).statusCode).toBe(201);
+    expect((await register("game.example.com:7777")).statusCode).toBe(201);
+    expect((await register("wss://game.example.com:443")).statusCode).toBe(201);
+    expect((await register("http://localhost:7777")).statusCode).toBe(400);
+    expect((await register("localhost")).statusCode).toBe(400);
+    expect((await register("1.2.3.4:7777 junk")).statusCode).toBe(400);
   });
 
   it("register -> list -> heartbeat -> filter -> unregister", async () => {
@@ -215,6 +221,27 @@ describe("join tickets", () => {
       headers: { authorization: `Bearer ${player.token}` },
     });
     expect(full.statusCode).toBe(409);
+  });
+
+  it("accepts body-less POSTs that still carry a Content-Type (engine HTTP does this)", async () => {
+    const player = await guest();
+    const s = await registerServer();
+    for (const contentType of ["application/json", "text/plain", "application/x-www-form-urlencoded"]) {
+      const res = await app.inject({
+        method: "POST",
+        url: `/v1/servers/${s.serverId}/join`,
+        headers: { authorization: `Bearer ${player.token}`, "content-type": contentType },
+        payload: "",
+      });
+      expect(res.statusCode, contentType).toBe(200);
+    }
+    const bad = await app.inject({
+      method: "POST",
+      url: "/v1/auth/guest",
+      headers: { "content-type": "application/json" },
+      payload: "{not json",
+    });
+    expect(bad.statusCode).toBe(400);
   });
 
   it("does not accept a join ticket as a player token", async () => {
