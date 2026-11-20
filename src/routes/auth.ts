@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import { requirePlayer, sha256 } from "../auth.js";
 import { now } from "../db.js";
+import { randomGuestName, sanitizeDisplayName } from "../names.js";
 
 interface PlayerRow {
   id: string;
@@ -32,8 +33,10 @@ export default async function authRoutes(app: FastifyInstance) {
   });
 
   /**
-   * Guest login. The client generates a random deviceId once (kept in browser storage)
-   * and sends it every time, so the same browser gets the same player back.
+   * Guest login. The client sends a stable deviceId (browser: random id kept in browser storage;
+   * PC: derived from the machine), so the same browser / PC gets the same player back.
+   * New players get a random friendly name ("SwiftOtter4821") unless they send one.
+   * Names are sanitized; a name that is empty after cleaning is ignored.
    */
   app.post<{ Body: { deviceId?: string; displayName?: string } }>(
     "/v1/auth/guest",
@@ -50,7 +53,8 @@ export default async function authRoutes(app: FastifyInstance) {
       },
     },
     async (request) => {
-      const { deviceId, displayName: name } = request.body ?? {};
+      const { deviceId, displayName: rawName } = request.body ?? {};
+      const name = rawName ? sanitizeDisplayName(rawName) || undefined : undefined;
       const deviceHash = deviceId ? sha256(deviceId) : null;
 
       let row = deviceHash ? (findByDevice.get(deviceHash) as PlayerRow | undefined) : undefined;
@@ -63,7 +67,7 @@ export default async function authRoutes(app: FastifyInstance) {
       } else {
         const id = randomUUID();
         const t = now();
-        const finalName = name ?? `Guest-${id.slice(0, 6)}`;
+        const finalName = name ?? randomGuestName();
         insert.run(id, finalName, deviceHash, t, t);
         row = { id, display_name: finalName, created_at: t };
       }
@@ -92,7 +96,9 @@ export default async function authRoutes(app: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      rename.run(request.body.displayName, request.user.sub);
+      const clean = sanitizeDisplayName(request.body.displayName);
+      if (!clean) return reply.code(400).send({ error: "bad_request", message: "Display name is empty after removing invalid characters." });
+      rename.run(clean, request.user.sub);
       const row = findById.get(request.user.sub) as PlayerRow | undefined;
       if (!row) return reply.code(404).send({ error: "not_found" });
       return issue(row);
