@@ -170,3 +170,24 @@ Then in the UE project set `BackendUrl=https://api.yourdomain.com` (guide 02).
 - **Backup:** stop the container, copy the database out of the volume, start it again:
   `docker compose stop && docker run --rm -v osswasm-backend_osswasm-data:/data -v "$PWD":/backup alpine cp /data/osswasm.db /backup/ && docker compose start`
   (On TrueNAS, snapshot the dataset instead.)
+
+## 7. Optional: "Log in with itch.io"
+
+Guest login always works. To also let players log in with their itch.io account (same player on every device and
+browser, name taken from itch):
+
+1. On itch.io open **Dashboard → Settings → OAuth applications** (itch.io/user/settings/oauth-apps) and create an app.
+   - **Redirect URI**: `https://api.yourdomain.com/v1/auth/itch/callback` (your `PUBLIC_URL` + `/v1/auth/itch/callback`;
+     it must be https on a real domain). For a local test use `http://localhost:3000/v1/auth/itch/callback` if itch
+     accepts it for your app (loopback addresses are allowed).
+   - Copy the **Client ID**. There is no client secret: the login uses PKCE.
+2. In the backend settings add `ITCH_CLIENT_ID=<client id>` and `PUBLIC_URL=https://api.yourdomain.com`
+   (Portainer: Stack → Environment variables), then redeploy.
+3. Check `https://api.yourdomain.com/v1/auth/providers`: it must list `itch`.
+4. In the game: Project Settings → Plugins → OSS WASM → **Login Providers → Enable Itch Login**, and add
+   `Button_ItchLogin` to the main menu (guide 05) or call the *Login With Provider* node with `itch`.
+
+How it works: the game opens itch.io in a new browser tab, the player approves, itch.io sends the browser back to
+your backend's callback page, the backend swaps the code for the itch profile (id, name) and gives the game its normal
+player token. The game only polls the backend, so there is nothing to host or configure on the game side.
+Pending logins live in the backend's memory (10 minutes), so run one backend instance.

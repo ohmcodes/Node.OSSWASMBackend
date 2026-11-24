@@ -23,6 +23,17 @@ export interface Config {
   rateLimitPerMinute: number;
   /** Set when running behind Nginx Proxy Manager / Cloudflare Tunnel so client IPs are correct. */
   trustProxy: boolean;
+  /** Public base URL of this backend (https://api.mygame.com). Used to build the itch.io redirect URI. */
+  publicUrl: string;
+  /** itch.io OAuth client id. Empty = itch.io login is off. No client secret exists (PKCE). */
+  itchClientId: string;
+  /** Redirect URI registered on the itch.io OAuth app. Default: <publicUrl>/v1/auth/itch/callback */
+  itchRedirectUri: string;
+  /** Overridable for tests / mirrors. */
+  itchAuthorizeUrl: string;
+  itchApiUrl: string;
+  /** How long a started itch.io login may take, in seconds. */
+  itchLoginTtl: number;
 }
 
 export const DEFAULT_ALLOWED_ORIGINS = [
@@ -82,8 +93,23 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, overrides: Part
     maxSaveBytes: int(env.MAX_SAVE_BYTES, 1024 * 1024),
     rateLimitPerMinute: int(env.RATE_LIMIT_PER_MINUTE, 300),
     trustProxy: bool(env.TRUST_PROXY, false),
+    publicUrl: "",
+    itchClientId: (env.ITCH_CLIENT_ID ?? "").trim(),
+    itchRedirectUri: "",
+    itchAuthorizeUrl: env.ITCH_AUTHORIZE_URL ?? "https://itch.io/user/oauth",
+    itchApiUrl: (env.ITCH_API_URL ?? "https://api.itch.io").replace(/\/+$/, ""),
+    itchLoginTtl: int(env.ITCH_LOGIN_TTL_SECONDS, 600),
     ...overrides,
   };
+  if (!overrides.publicUrl) {
+    config.publicUrl = (env.PUBLIC_URL ?? `http://localhost:${config.port}`).trim().replace(/\/+$/, "");
+  }
+  if (!overrides.itchRedirectUri) {
+    config.itchRedirectUri = env.ITCH_REDIRECT_URI?.trim() || `${config.publicUrl}/v1/auth/itch/callback`;
+  }
+  if (config.itchClientId && production && !env.PUBLIC_URL && !env.ITCH_REDIRECT_URI) {
+    warnings.push("ITCH_CLIENT_ID is set but PUBLIC_URL / ITCH_REDIRECT_URI is not: the itch.io redirect URI points at localhost.");
+  }
 
   for (const w of warnings) console.warn(`[config] ${w}`);
   return config;

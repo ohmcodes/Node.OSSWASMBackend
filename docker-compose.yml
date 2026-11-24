@@ -16,6 +16,9 @@ services:
       CLIENT_SCORE_SUBMIT: ${CLIENT_SCORE_SUBMIT:-true}
       SERVER_TTL_SECONDS: ${SERVER_TTL_SECONDS:-30}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      PUBLIC_URL: ${PUBLIC_URL:-}
+      ITCH_CLIENT_ID: ${ITCH_CLIENT_ID:-}
+      ITCH_REDIRECT_URI: ${ITCH_REDIRECT_URI:-}
     volumes:
       - osswasm-data:/data
 

@@ -37,6 +37,9 @@ npm run dev        # http://localhost:3000, dev defaults: random JWT secret, ser
 | `SERVER_TTL_SECONDS` | `30` | Server removed from the list after this long without a heartbeat. |
 | `PLAYER_TOKEN_TTL_SECONDS` | `2592000` (30 days) | |
 | `JOIN_TICKET_TTL_SECONDS` | `60` | |
+| `ITCH_CLIENT_ID` | empty = off | itch.io OAuth app client id (public; PKCE, no secret). Turns on `/v1/auth/itch/*`. |
+| `PUBLIC_URL` | `http://localhost:<PORT>` | Public https address of this backend. The itch.io redirect URI is `<PUBLIC_URL>/v1/auth/itch/callback` (or set `ITCH_REDIRECT_URI`). |
+| `ITCH_LOGIN_TTL_SECONDS` | `600` | How long a started itch.io login may take. |
 | `MAX_SAVE_BYTES` | `1048576` | Max size of one save slot. |
 | `RATE_LIMIT_PER_MINUTE` | `300` | Per IP. |
 | `LOG_LEVEL` | `info` | |
@@ -49,6 +52,10 @@ Auth headers: players send `Authorization: Bearer <token>`; dedicated servers se
 | Method | Path | Auth | Body → Response |
 |---|---|---|---|
 | POST | `/v1/auth/guest` | – | `{deviceId?, displayName?}` → `{token, expiresIn, player:{id, displayName, createdAt}}`. Same `deviceId` returns the same player. |
+| GET | `/v1/auth/providers` | – | → `{providers:[{name:"guest"},{name:"itch",label}]}` (itch only when `ITCH_CLIENT_ID` is set) |
+| POST | `/v1/auth/itch/start` | – | → `{authorizeUrl, pollId, expiresIn}`. The game opens `authorizeUrl` in a browser tab. 501 when itch is off. |
+| GET | `/v1/auth/itch/status/:pollId` | – | → `{status:"pending"}`, or once `{status:"done", token, expiresIn, player}`, or `{status:"error", message}`. 404 when unknown/expired. |
+| GET | `/v1/auth/itch/callback` | – | itch.io redirects the player's browser here (`code`, `state`); shows a small "you can close this window" page. |
 | GET | `/v1/me` | player | → `{id, displayName, createdAt}` |
 | PATCH | `/v1/me` | player | `{displayName}` → new `{token, player}` |
 

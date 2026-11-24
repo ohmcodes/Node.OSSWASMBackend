@@ -13,6 +13,16 @@ CREATE TABLE IF NOT EXISTS players (
   last_seen_at  INTEGER NOT NULL
 );
 
+-- External logins (itch.io, later Discord/Google/...): one provider account maps to one player.
+CREATE TABLE IF NOT EXISTS identities (
+  provider    TEXT NOT NULL,
+  subject     TEXT NOT NULL,
+  player_id   TEXT NOT NULL REFERENCES players(id),
+  created_at  INTEGER NOT NULL,
+  PRIMARY KEY (provider, subject)
+);
+CREATE INDEX IF NOT EXISTS identities_player ON identities(player_id);
+
 CREATE TABLE IF NOT EXISTS servers (
   id              TEXT PRIMARY KEY,
   token_hash      TEXT NOT NULL,

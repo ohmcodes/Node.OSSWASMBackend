@@ -6,6 +6,7 @@ import type { Config } from "./config.js";
 import { originMatcher } from "./cors.js";
 import { type Db, openDb } from "./db.js";
 import authRoutes from "./routes/auth.js";
+import itchRoutes from "./routes/itch.js";
 import leaderboardRoutes from "./routes/leaderboards.js";
 import saveRoutes from "./routes/saves.js";
 import serverRoutes from "./routes/servers.js";
@@ -53,6 +54,7 @@ export async function buildApp(config: Config, options: FastifyServerOptions = {
   app.get("/health", async () => ({ ok: true, version: VERSION }));
 
   await app.register(authRoutes);
+  await app.register(itchRoutes);
   await app.register(serverRoutes);
   await app.register(leaderboardRoutes);
   await app.register(saveRoutes);
